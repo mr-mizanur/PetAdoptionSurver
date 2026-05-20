@@ -198,9 +198,6 @@
 //    console.log(`Run on: ${port}`);
 //});
 
-
-
-
 const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -217,7 +214,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.uaz5xk0.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+const uri = process.env.DB_URI ;
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -225,6 +222,10 @@ const client = new MongoClient(uri, {
     strict: true,
     deprecationErrors: true,
   }
+});
+
+app.get('/', (req, res) => {
+    res.send('Matrix PetAdopt Core Engine Running...');
 });
 
 async function run() {
@@ -235,9 +236,6 @@ async function run() {
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. successfully connected to MongoDB!");
-
-   
-
 
     app.post('/api/pets', async (req, res) => {
         try {
@@ -250,7 +248,6 @@ async function run() {
         }
     });
 
-  
     app.get('/api/pets', async (req, res) => {
         try {
             const { search, species } = req.query;
@@ -271,7 +268,6 @@ async function run() {
         }
     });
 
-  
     app.get('/api/my-listings', async (req, res) => {
         try {
             const email = req.query.email;
@@ -283,7 +279,6 @@ async function run() {
         }
     });
 
-    
     app.get('/api/owner-stats', async (req, res) => {
         try {
             const email = req.query.email;
@@ -299,7 +294,6 @@ async function run() {
         }
     });
 
-
     app.get('/api/pets/:id', async (req, res) => {
         try {
             const id = req.params.id;
@@ -310,7 +304,6 @@ async function run() {
         }
     });
 
-   
     app.put('/api/pets/:id', async (req, res) => {
         try {
             const id = req.params.id;
@@ -326,7 +319,6 @@ async function run() {
         }
     });
 
-   
     app.delete('/api/pets/:id', async (req, res) => {
         try {
             const id = req.params.id;
@@ -337,7 +329,6 @@ async function run() {
         }
     });
 
-   
     app.post('/api/requests', async (req, res) => {
         try {
             const requestData = req.body;
@@ -349,7 +340,6 @@ async function run() {
         }
     });
 
-
     app.get('/api/my-requests', async (req, res) => {
         try {
             const email = req.query.email;
@@ -360,7 +350,6 @@ async function run() {
             res.status(500).send({ message: error.message });
         }
     });
-
 
     app.get('/api/owner-requests', async (req, res) => {
         try {
@@ -396,13 +385,11 @@ async function run() {
                 { $set: { status: 'approved' } }
             );
 
-           
             await requestsCollection.updateMany(
                 { petId: petId, _id: { $ne: new ObjectId(requestId) }, status: 'pending' },
                 { $set: { status: 'rejected' } }
             );
 
-            
             await petsCollection.updateOne(
                 { _id: new ObjectId(petId) },
                 { $set: { status: 'adopted' } }
@@ -414,7 +401,6 @@ async function run() {
         }
     });
 
-   
     app.patch('/api/requests/reject/:id', async (req, res) => {
         try {
             const requestId = req.params.id;
@@ -426,10 +412,6 @@ async function run() {
         } catch (error) {
             res.status(500).send({ message: error.message });
         }
-    });
-
-    app.get('/', (req, res) => {
-        res.send('running...');
     });
 
   } catch (error) {
