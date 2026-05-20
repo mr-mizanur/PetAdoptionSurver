@@ -458,7 +458,7 @@ const app = express();
 // CORS Configuration
 app.use(cors({
    origin: [
-        'https://pet-adoption-g53n.vercel.app',
+        'https://pet-adoption-theta-ten.vercel.app',
         'http://localhost:3000'
     ],
     credentials: true 
