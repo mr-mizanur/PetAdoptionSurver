@@ -5,7 +5,6 @@ require('dotenv').config();
 
 const app = express();
 
-
 app.use(cors({
     origin: [
         'https://pet-adoption-theta-ten.vercel.app',
@@ -25,10 +24,10 @@ const client = new MongoClient(uri, {
   }
 });
 
-
 let petsCollection, requestsCollection, wishlistCollection;
 
 async function connectDB() {
+    if (petsCollection) return; // অলরেডি কানেক্টেড থাকলে আর কানেক্ট করার দরকার নেই
     try {
         await client.connect();
         const db = client.db("PetAdopt");
@@ -38,13 +37,19 @@ async function connectDB() {
         console.log("Connected to MongoDB successfully!");
     } catch (error) {
         console.error("Database connection failed:", error);
+        throw error;
     }
 }
 
-
-connectDB();
-
-
+// Middleware: প্রতিটি রিকোয়েস্টের আগে নিশ্চিত করবে ডেটাবেস কানেক্টেড আছে
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        res.status(500).send({ message: "Database connection error" });
+    }
+});
 
 app.get('/', (req, res) => res.send('PetAdopt Engine Running...'));
 
@@ -79,7 +84,6 @@ app.get('/api/wishlist/:email', async (req, res) => {
     res.send(result);
 });
 
-
 app.post('/api/requests', async (req, res) => {
     const newRequest = { ...req.body, status: 'pending' };
     const result = await requestsCollection.insertOne(newRequest);
@@ -97,7 +101,6 @@ app.patch('/api/requests/approve/:id', async (req, res) => {
     res.send({ success: true });
 });
 
-
 app.get('/api/owner-stats', async (req, res) => {
     const email = req.query.email;
     const stats = await petsCollection.aggregate([
@@ -113,9 +116,3 @@ app.get('/api/owner-stats', async (req, res) => {
 });
 
 module.exports = app;
-
-
-
-
-
-//all
