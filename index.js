@@ -41,7 +41,7 @@ async function connectDB() {
     }
 }
 
-// Middleware: প্রতিটি রিকোয়েস্টের আগে নিশ্চিত করবে ডেটাবেস কানেক্টেড আছে
+
 app.use(async (req, res, next) => {
     try {
         await connectDB();
@@ -89,6 +89,50 @@ app.post('/api/requests', async (req, res) => {
     const result = await requestsCollection.insertOne(newRequest);
     res.send(result);
 });
+
+
+
+
+
+app.get('/api/my-listings', async (req, res) => {
+    const email = req.query.email;
+    if (!email) return res.status(400).send({ message: "Email required" });
+    
+    const result = await petsCollection.find({ ownerEmail: email }).toArray();
+    res.send(result);
+});
+
+
+app.get('/api/owner-requests', async (req, res) => {
+    const email = req.query.email;
+    if (!email) return res.status(400).send({ message: "Email required" });
+
+    const myPets = await petsCollection.find({ ownerEmail: email }).project({ _id: 1 }).toArray();
+    const myPetIds = myPets.map(pet => pet._id.toString());
+
+   
+    const requests = await requestsCollection.find({ petId: { $in: myPetIds } }).toArray();
+    res.send(requests);
+});
+
+
+app.delete('/api/pets/:id', async (req, res) => {
+    const id = req.params.id;
+    const result = await petsCollection.deleteOne({ _id: new ObjectId(id) });
+    res.send(result);
+});
+
+
+app.patch('/api/requests/reject/:id', async (req, res) => {
+    const id = req.params.id;
+    const result = await requestsCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status: 'rejected' } }
+    );
+    res.send(result);
+});
+
+
 
 app.patch('/api/requests/approve/:id', async (req, res) => {
     const targetRequest = await requestsCollection.findOne({ _id: new ObjectId(req.params.id) });
