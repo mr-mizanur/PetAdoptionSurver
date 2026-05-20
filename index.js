@@ -207,7 +207,7 @@ app.use(cors({
     credentials: true 
 }));
 app.use(express.json());
-app.use(cookieParser()); // --- কুকি পার্সার যোগ করা হয়েছে ---
+app.use(cookieParser()); 
 
 const uri = process.env.DB_URI;
 
@@ -219,7 +219,7 @@ const client = new MongoClient(uri, {
   }
 });
 
-// --- JWT ভেরিফিকেশন মিডলওয়্যার (প্রাইভেট রাউটের জন্য) ---
+
 const verifyToken = (req, res, next) => {
     const token = req.cookies?.token;
     if (!token) return res.status(401).send({ message: "Unauthorized access" });
@@ -257,18 +257,18 @@ app.use(async (req, res, next) => {
     }
 });
 
-// --- JWT Token ইস্যু করার API (Login এর পর কল করবেন) ---
+
 app.post('/api/jwt', async (req, res) => {
     const user = req.body;
     const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+
     res.cookie('token', token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
+        secure: true,        
+        sameSite: 'none',   
     }).send({ success: true });
 });
 
-// --- Logout API ---
 app.post('/api/logout', async (req, res) => {
     res.clearCookie('token', { 
         maxAge: 0, 
@@ -279,7 +279,7 @@ app.post('/api/logout', async (req, res) => {
 
 app.get('/', (req, res) => res.send('PetAdopt Engine Running...'));
 
-// প্রাইভেট রাউটগুলোতে verifyToken মিডলওয়্যার যুক্ত করা হয়েছে
+
 app.post('/api/pets', verifyToken, async (req, res) => {
     const newPet = { ...req.body, status: 'available' };
     const result = await petsCollection.insertOne(newPet);
