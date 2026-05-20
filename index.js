@@ -198,14 +198,264 @@
 //    console.log(`Run on: ${port}`);
 //});
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//
+//
+//const express = require('express');
+//const cors = require('cors');
+//const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+//require('dotenv').config();
+//
+//const app = express();
+//const port = process.env.PORT || 5000;
+//
+//app.use(cors({
+//   origin: [
+//        'https://pet-adoption-g53n.vercel.app',
+//        'http://localhost:3000'
+//    ],
+//    credentials: true 
+//}));
+//app.use(express.json());
+//
+//const uri = process.env.DB_URI ;
+//
+//const client = new MongoClient(uri, {
+//  serverApi: {
+//    version: ServerApiVersion.v1,
+//    strict: true,
+//    deprecationErrors: true,
+//  }
+//});
+//
+//app.get('/', (req, res) => {
+//    res.send('Matrix PetAdopt Core Engine Running...');
+//});
+//
+//async function run() {
+//  try {
+//    const db = client.db("PetAdopt");
+//    const petsCollection = db.collection("pets");
+//    const requestsCollection = db.collection("adoptionrequests");
+//
+//    await client.db("admin").command({ ping: 1 });
+//    console.log("Pinged your deployment. successfully connected to MongoDB!");
+//
+//    app.post('/api/pets', async (req, res) => {
+//        try {
+//            const petData = req.body;
+//            const newPet = { ...petData, status: 'available' };
+//            const result = await petsCollection.insertOne(newPet);
+//            res.send(result);
+//        } catch (error) {
+//            res.status(500).send({ message: error.message });
+//        }
+//    });
+//
+//    app.get('/api/pets', async (req, res) => {
+//        try {
+//            const { search, species } = req.query;
+//            let query = {};
+//
+//            if (search) {
+//                query.name = { $regex: search, $options: 'i' };
+//            }
+//            if (species) {
+//                const speciesArray = species.split(',');
+//                query.species = { $in: speciesArray };
+//            }
+//
+//            const result = await petsCollection.find(query).toArray();
+//            res.send(result);
+//        } catch (error) {
+//            res.status(500).send({ message: error.message });
+//        }
+//    });
+//
+//    app.get('/api/my-listings', async (req, res) => {
+//        try {
+//            const email = req.query.email;
+//            if (!email) return res.status(400).send({ message: 'Owner email query parameter is required' });
+//            const result = await petsCollection.find({ ownerEmail: email }).toArray();
+//            res.send(result);
+//        } catch (error) {
+//            res.status(500).send({ message: error.message });
+//        }
+//    });
+//
+//    app.get('/api/owner-stats', async (req, res) => {
+//        try {
+//            const email = req.query.email;
+//            if (!email) return res.status(400).send({ message: 'Owner email query parameter is required' });
+//            
+//            const totalListings = await petsCollection.countDocuments({ ownerEmail: email });
+//            const availableCount = await petsCollection.countDocuments({ ownerEmail: email, status: 'available' });
+//            const adoptedCount = await petsCollection.countDocuments({ ownerEmail: email, status: 'adopted' });
+//
+//            res.send({ totalListings, availableCount, adoptedCount });
+//        } catch (error) {
+//            res.status(500).send({ message: error.message });
+//        }
+//    });
+//
+//    app.get('/api/pets/:id', async (req, res) => {
+//        try {
+//            const id = req.params.id;
+//            const result = await petsCollection.findOne({ _id: new ObjectId(id) });
+//            res.send(result);
+//        } catch (error) {
+//            res.status(500).send({ message: error.message });
+//        }
+//    });
+//
+//    app.put('/api/pets/:id', async (req, res) => {
+//        try {
+//            const id = req.params.id;
+//            const updatedData = req.body;
+//            delete updatedData._id; 
+//            const result = await petsCollection.updateOne(
+//                { _id: new ObjectId(id) },
+//                { $set: updatedData }
+//            );
+//            res.send(result);
+//        } catch (error) {
+//            res.status(500).send({ message: error.message });
+//        }
+//    });
+//
+//    app.delete('/api/pets/:id', async (req, res) => {
+//        try {
+//            const id = req.params.id;
+//            const result = await petsCollection.deleteOne({ _id: new ObjectId(id) });
+//            res.send(result);
+//        } catch (error) {
+//            res.status(500).send({ message: error.message });
+//        }
+//    });
+//
+//    app.post('/api/requests', async (req, res) => {
+//        try {
+//            const requestData = req.body;
+//            const newRequest = { ...requestData, status: 'pending' };
+//            const result = await requestsCollection.insertOne(newRequest);
+//            res.send(result);
+//        } catch (error) {
+//            res.status(500).send({ message: error.message });
+//        }
+//    });
+//
+//    app.get('/api/my-requests', async (req, res) => {
+//        try {
+//            const email = req.query.email;
+//            if (!email) return res.status(400).send({ message: 'Email required' });
+//            const result = await requestsCollection.find({ requesterEmail: email }).toArray();
+//            res.send(result);
+//        } catch (error) {
+//            res.status(500).send({ message: error.message });
+//        }
+//    });
+//
+//    app.get('/api/owner-requests', async (req, res) => {
+//        try {
+//            const email = req.query.email;
+//            if (!email) return res.status(400).send({ message: 'Owner email required' });
+//            const result = await requestsCollection.find({ ownerEmail: email }).toArray();
+//            res.send(result);
+//        } catch (error) {
+//            res.status(500).send({ message: error.message });
+//        }
+//    });
+//
+//    app.delete('/api/requests/:id', async (req, res) => {
+//        try {
+//            const id = req.params.id;
+//            const result = await requestsCollection.deleteOne({ _id: new ObjectId(id) });
+//            res.send(result);
+//        } catch (error) {
+//            res.status(500).send({ message: error.message });
+//        }
+//    });
+//
+//    app.patch('/api/requests/approve/:id', async (req, res) => {
+//        try {
+//            const requestId = req.params.id;
+//            const targetRequest = await requestsCollection.findOne({ _id: new ObjectId(requestId) });
+//            if (!targetRequest) return res.status(404).send({ message: 'Target request pipeline record not found' });
+//
+//            const petId = targetRequest.petId;
+//
+//            await requestsCollection.updateOne(
+//                { _id: new ObjectId(requestId) },
+//                { $set: { status: 'approved' } }
+//            );
+//
+//            await requestsCollection.updateMany(
+//                { petId: petId, _id: { $ne: new ObjectId(requestId) }, status: 'pending' },
+//                { $set: { status: 'rejected' } }
+//            );
+//
+//            await petsCollection.updateOne(
+//                { _id: new ObjectId(petId) },
+//                { $set: { status: 'adopted' } }
+//            );
+//
+//            res.send({ success: true, message: 'Adoption approved and other requests rejected!' });
+//        } catch (error) {
+//            res.status(500).send({ message: error.message });
+//        }
+//    });
+//
+//    app.patch('/api/requests/reject/:id', async (req, res) => {
+//        try {
+//            const requestId = req.params.id;
+//            const result = await requestsCollection.updateOne(
+//                { _id: new ObjectId(requestId) },
+//                { $set: { status: 'rejected' } }
+//            );
+//            res.send(result);
+//        } catch (error) {
+//            res.status(500).send({ message: error.message });
+//        }
+//    });
+//
+//  } catch (error) {
+//    console.error("error:", error);
+//  }
+//}
+//run().catch(console.dir);
+//
+//app.listen(port, () => {
+//    console.log(`Run on: ${port}`);
+//});
+//
+//
+//module.exports = app;
+
+
+
 const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 5000;
 
+// CORS Configuration
 app.use(cors({
    origin: [
         'https://pet-adoption-g53n.vercel.app',
@@ -215,7 +465,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-const uri = process.env.DB_URI ;
+const uri = process.env.DB_URI;
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -225,19 +475,19 @@ const client = new MongoClient(uri, {
   }
 });
 
+// Root Route
 app.get('/', (req, res) => {
     res.send('Matrix PetAdopt Core Engine Running...');
 });
 
+// Database Operations
 async function run() {
   try {
     const db = client.db("PetAdopt");
     const petsCollection = db.collection("pets");
     const requestsCollection = db.collection("adoptionrequests");
 
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. successfully connected to MongoDB!");
-
+    // Routes
     app.post('/api/pets', async (req, res) => {
         try {
             const petData = req.body;
@@ -253,15 +503,11 @@ async function run() {
         try {
             const { search, species } = req.query;
             let query = {};
-
-            if (search) {
-                query.name = { $regex: search, $options: 'i' };
-            }
+            if (search) query.name = { $regex: search, $options: 'i' };
             if (species) {
                 const speciesArray = species.split(',');
                 query.species = { $in: speciesArray };
             }
-
             const result = await petsCollection.find(query).toArray();
             res.send(result);
         } catch (error) {
@@ -272,7 +518,7 @@ async function run() {
     app.get('/api/my-listings', async (req, res) => {
         try {
             const email = req.query.email;
-            if (!email) return res.status(400).send({ message: 'Owner email query parameter is required' });
+            if (!email) return res.status(400).send({ message: 'Owner email required' });
             const result = await petsCollection.find({ ownerEmail: email }).toArray();
             res.send(result);
         } catch (error) {
@@ -283,12 +529,10 @@ async function run() {
     app.get('/api/owner-stats', async (req, res) => {
         try {
             const email = req.query.email;
-            if (!email) return res.status(400).send({ message: 'Owner email query parameter is required' });
-            
+            if (!email) return res.status(400).send({ message: 'Owner email required' });
             const totalListings = await petsCollection.countDocuments({ ownerEmail: email });
             const availableCount = await petsCollection.countDocuments({ ownerEmail: email, status: 'available' });
             const adoptedCount = await petsCollection.countDocuments({ ownerEmail: email, status: 'adopted' });
-
             res.send({ totalListings, availableCount, adoptedCount });
         } catch (error) {
             res.status(500).send({ message: error.message });
@@ -297,8 +541,7 @@ async function run() {
 
     app.get('/api/pets/:id', async (req, res) => {
         try {
-            const id = req.params.id;
-            const result = await petsCollection.findOne({ _id: new ObjectId(id) });
+            const result = await petsCollection.findOne({ _id: new ObjectId(req.params.id) });
             res.send(result);
         } catch (error) {
             res.status(500).send({ message: error.message });
@@ -307,13 +550,9 @@ async function run() {
 
     app.put('/api/pets/:id', async (req, res) => {
         try {
-            const id = req.params.id;
             const updatedData = req.body;
             delete updatedData._id; 
-            const result = await petsCollection.updateOne(
-                { _id: new ObjectId(id) },
-                { $set: updatedData }
-            );
+            const result = await petsCollection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: updatedData });
             res.send(result);
         } catch (error) {
             res.status(500).send({ message: error.message });
@@ -322,8 +561,7 @@ async function run() {
 
     app.delete('/api/pets/:id', async (req, res) => {
         try {
-            const id = req.params.id;
-            const result = await petsCollection.deleteOne({ _id: new ObjectId(id) });
+            const result = await petsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
             res.send(result);
         } catch (error) {
             res.status(500).send({ message: error.message });
@@ -332,8 +570,7 @@ async function run() {
 
     app.post('/api/requests', async (req, res) => {
         try {
-            const requestData = req.body;
-            const newRequest = { ...requestData, status: 'pending' };
+            const newRequest = { ...req.body, status: 'pending' };
             const result = await requestsCollection.insertOne(newRequest);
             res.send(result);
         } catch (error) {
@@ -343,9 +580,7 @@ async function run() {
 
     app.get('/api/my-requests', async (req, res) => {
         try {
-            const email = req.query.email;
-            if (!email) return res.status(400).send({ message: 'Email required' });
-            const result = await requestsCollection.find({ requesterEmail: email }).toArray();
+            const result = await requestsCollection.find({ requesterEmail: req.query.email }).toArray();
             res.send(result);
         } catch (error) {
             res.status(500).send({ message: error.message });
@@ -354,9 +589,7 @@ async function run() {
 
     app.get('/api/owner-requests', async (req, res) => {
         try {
-            const email = req.query.email;
-            if (!email) return res.status(400).send({ message: 'Owner email required' });
-            const result = await requestsCollection.find({ ownerEmail: email }).toArray();
+            const result = await requestsCollection.find({ ownerEmail: req.query.email }).toArray();
             res.send(result);
         } catch (error) {
             res.status(500).send({ message: error.message });
@@ -365,8 +598,7 @@ async function run() {
 
     app.delete('/api/requests/:id', async (req, res) => {
         try {
-            const id = req.params.id;
-            const result = await requestsCollection.deleteOne({ _id: new ObjectId(id) });
+            const result = await requestsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
             res.send(result);
         } catch (error) {
             res.status(500).send({ message: error.message });
@@ -375,28 +607,11 @@ async function run() {
 
     app.patch('/api/requests/approve/:id', async (req, res) => {
         try {
-            const requestId = req.params.id;
-            const targetRequest = await requestsCollection.findOne({ _id: new ObjectId(requestId) });
-            if (!targetRequest) return res.status(404).send({ message: 'Target request pipeline record not found' });
-
-            const petId = targetRequest.petId;
-
-            await requestsCollection.updateOne(
-                { _id: new ObjectId(requestId) },
-                { $set: { status: 'approved' } }
-            );
-
-            await requestsCollection.updateMany(
-                { petId: petId, _id: { $ne: new ObjectId(requestId) }, status: 'pending' },
-                { $set: { status: 'rejected' } }
-            );
-
-            await petsCollection.updateOne(
-                { _id: new ObjectId(petId) },
-                { $set: { status: 'adopted' } }
-            );
-
-            res.send({ success: true, message: 'Adoption approved and other requests rejected!' });
+            const targetRequest = await requestsCollection.findOne({ _id: new ObjectId(req.params.id) });
+            await requestsCollection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: { status: 'approved' } });
+            await requestsCollection.updateMany({ petId: targetRequest.petId, _id: { $ne: new ObjectId(req.params.id) } }, { $set: { status: 'rejected' } });
+            await petsCollection.updateOne({ _id: new ObjectId(targetRequest.petId) }, { $set: { status: 'adopted' } });
+            res.send({ success: true });
         } catch (error) {
             res.status(500).send({ message: error.message });
         }
@@ -404,11 +619,7 @@ async function run() {
 
     app.patch('/api/requests/reject/:id', async (req, res) => {
         try {
-            const requestId = req.params.id;
-            const result = await requestsCollection.updateOne(
-                { _id: new ObjectId(requestId) },
-                { $set: { status: 'rejected' } }
-            );
+            const result = await requestsCollection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: { status: 'rejected' } });
             res.send(result);
         } catch (error) {
             res.status(500).send({ message: error.message });
@@ -416,14 +627,11 @@ async function run() {
     });
 
   } catch (error) {
-    console.error("error:", error);
+    console.error("Database connection error:", error);
   }
 }
+
 run().catch(console.dir);
 
-app.listen(port, () => {
-    console.log(`Run on: ${port}`);
-});
-
-
+// Vercel এর জন্য এক্সপোর্ট
 module.exports = app;
