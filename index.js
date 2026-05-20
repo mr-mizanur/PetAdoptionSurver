@@ -187,6 +187,7 @@
 
 
 
+
 const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -195,29 +196,32 @@ const cookieParser = require('cookie-parser');
 
 const app = express();
 
-// CORS কনফিগারেশন: Credentials এবং নির্দিষ্ট Origin সেট করা
+// CORS কনফিগারেশন
 app.use(cors({
-    origin: ['https://pet-adoption-theta-ten.vercel.app', 'http://localhost:3000'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+    origin: [
+        'https://pet-adoption-theta-ten.vercel.app',
+        'http://localhost:3000'
+    ],
+    credentials: true 
 }));
-
 app.use(express.json());
 app.use(cookieParser());
 
 const uri = process.env.DB_URI;
+
 const client = new MongoClient(uri, {
-  serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true }
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  }
 });
 
-// মিডলওয়্যার: ডাটা ব্লক চেক করা
+// সিকিউরিটি মিডলওয়্যার
 const verifyToken = (req, res, next) => {
-    // এখানে আপনার সেশন কুকি চেক করা হচ্ছে
     const sessionToken = req.cookies?.['__Secure-better-auth.session_token'];
-    
     if (!sessionToken) {
-        return res.status(401).send({ message: "Unauthorized: No session token found" });
+        return res.status(401).send({ message: "Unauthorized access" });
     }
     next();
 };
@@ -232,12 +236,25 @@ async function connectDB() {
         petsCollection = db.collection("pets");
         requestsCollection = db.collection("adoptionrequests");
         wishlistCollection = db.collection("wishlist");
-    } catch (error) { console.error(error); throw error; }
+        console.log("Connected to MongoDB successfully!");
+    } catch (error) {
+        console.error("Database connection failed:", error);
+        throw error;
+    }
 }
 
-app.use(async (req, res, next) => { await connectDB(); next(); });
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        res.status(500).send({ message: "Database connection error" });
+    }
+});
 
-// রাউটস
+app.get('/', (req, res) => res.send('PetAdopt Engine Running...'));
+
+// --- পাবলিক রাউট ---
 app.get('/api/pets', async (req, res) => {
     const { search, species } = req.query;
     let query = {};
@@ -247,8 +264,31 @@ app.get('/api/pets', async (req, res) => {
     res.send(result);
 });
 
+app.get('/api/pets/:id', async (req, res) => {
+    const result = await petsCollection.findOne({ _id: new ObjectId(req.params.id) });
+    res.send(result);
+});
+
+// --- সুরক্ষিত রাউট (verifyToken যুক্ত) ---
 app.post('/api/pets', verifyToken, async (req, res) => {
-    const result = await petsCollection.insertOne({ ...req.body, status: 'available' });
+    const newPet = { ...req.body, status: 'available' };
+    const result = await petsCollection.insertOne(newPet);
+    res.send(result);
+});
+
+app.post('/api/wishlist', verifyToken, async (req, res) => {
+    const result = await wishlistCollection.insertOne(req.body);
+    res.send(result);
+});
+
+app.get('/api/wishlist/:email', verifyToken, async (req, res) => {
+    const result = await wishlistCollection.find({ userEmail: req.params.email }).toArray();
+    res.send(result);
+});
+
+app.post('/api/requests', verifyToken, async (req, res) => {
+    const newRequest = { ...req.body, status: 'pending' };
+    const result = await requestsCollection.insertOne(newRequest);
     res.send(result);
 });
 
@@ -266,12 +306,51 @@ app.get('/api/owner-requests', verifyToken, async (req, res) => {
     res.send(requests);
 });
 
+app.delete('/api/pets/:id', verifyToken, async (req, res) => {
+    const result = await petsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+    res.send(result);
+});
+
+app.patch('/api/requests/reject/:id', verifyToken, async (req, res) => {
+    const result = await requestsCollection.updateOne(
+        { _id: new ObjectId(req.params.id) },
+        { $set: { status: 'rejected' } }
+    );
+    res.send(result);
+});
+
+app.patch('/api/requests/approve/:id', verifyToken, async (req, res) => {
+    const targetRequest = await requestsCollection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!targetRequest) return res.status(404).send({ message: "Not found" });
+    await requestsCollection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: { status: 'approved' } });
+    await requestsCollection.updateMany({ petId: targetRequest.petId, _id: { $ne: new ObjectId(req.params.id) } }, { $set: { status: 'rejected' } });
+    await petsCollection.updateOne({ _id: new ObjectId(targetRequest.petId) }, { $set: { status: 'adopted' } });
+    res.send({ success: true });
+});
+
 app.get('/api/my-requests', verifyToken, async (req, res) => {
     const email = req.query.email;
     const requests = await requestsCollection.find({ requesterEmail: email }).toArray();
     res.send(requests);
 });
 
-app.get('/', (req, res) => res.send('PetAdopt Engine Running...'));
+app.delete('/api/requests/:id', verifyToken, async (req, res) => {
+    const result = await requestsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+    res.send({ success: result.deletedCount > 0 });
+});
+
+app.get('/api/owner-stats', verifyToken, async (req, res) => {
+    const email = req.query.email;
+    const stats = await petsCollection.aggregate([
+        { $match: { ownerEmail: email } },
+        { $group: { 
+            _id: null, 
+            totalListings: { $sum: 1 },
+            availableCount: { $sum: { $cond: [{ $eq: ["$status", "available"] }, 1, 0] } },
+            adoptedCount: { $sum: { $cond: [{ $eq: ["$status", "adopted"] }, 1, 0] } }
+        }}
+    ]).toArray();
+    res.send(stats[0] || { totalListings: 0, availableCount: 0, adoptedCount: 0 });
+});
 
 module.exports = app;
