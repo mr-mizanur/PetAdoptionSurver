@@ -145,6 +145,29 @@ app.patch('/api/requests/approve/:id', async (req, res) => {
     res.send({ success: true });
 });
 
+
+
+
+app.get('/api/my-requests', async (req, res) => {
+    const email = req.query.email;
+    if (!email) return res.status(400).send({ message: "Email required" });
+    
+    const requests = await requestsCollection.find({ requesterEmail: email }).toArray();
+    res.send(requests);
+});
+
+app.delete('/api/requests/:id', async (req, res) => {
+    const id = req.params.id;
+    const result = await requestsCollection.deleteOne({ _id: new ObjectId(id) });
+    if (result.deletedCount > 0) {
+        res.send({ success: true });
+    } else {
+        res.status(404).send({ message: "Request not found" });
+    }
+});
+
+
+
 app.get('/api/owner-stats', async (req, res) => {
     const email = req.query.email;
     const stats = await petsCollection.aggregate([
